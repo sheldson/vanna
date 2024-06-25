@@ -709,7 +709,33 @@ class VannaBase(ABC):
         return self._sanitize_plotly_code(self._extract_python_code(plotly_code))
 
     # ----------------- Connect to Any Database to run the Generated SQL ----------------- #
+    def connect_to_custom_api(self, token: str, project: str):
+        def run_sql_custom_api(sql: str) -> pd.DataFrame:
+            url = 'http://dataapi.epian1.com/api/sql/query'
+            params = {
+                'token': token,
+                'project': project
+            }
+            data = {
+                'q': sql,
+                'format': 'json'
+            }
+            response = requests.post(url, params=params, data=data)
+            response.raise_for_status()  # 如果请求失败会抛出异常
+            
+            # 解析返回的 JSON 数据，每行是一个 JSON 对象
+            data_lines = response.text.splitlines()
+            data = [json.loads(line) for line in data_lines]
+            
+            # 将解析的数据转换为 DataFrame
+            df = pd.DataFrame(data)
+            return df
 
+        self.dialect = "Custom API SQL"
+        self.run_sql = run_sql_custom_api
+        self.run_sql_is_set = True
+
+        
     def connect_to_snowflake(
         self,
         account: str,
@@ -823,6 +849,8 @@ class VannaBase(ABC):
         self.dialect = "SQLite"
         self.run_sql = run_sql_sqlite
         self.run_sql_is_set = True
+
+
 
     def connect_to_postgres(
         self,
