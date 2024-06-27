@@ -342,6 +342,9 @@ class VannaDB_VectorStore(VannaBase, VannaAdvanced):
 
         df = pd.read_json(StringIO(training_data.data))
 
+        # 按照时间降序排序，假设时间列名为 `created_at`
+        df = df.sort_values(by='id', ascending=False)
+
         return df
 
     def remove_training_data(self, id: str, **kwargs) -> bool:
