@@ -618,7 +618,7 @@ class VannaBase(ABC):
         message_log = [self.system_message(initial_prompt)]
         message_log.append(
             self.user_message(
-                "Generate a list of followup questions that the user might ask about this data. Respond with a list of questions, one per line. Do not answer with any explanations -- just the questions."
+                "生成一个用户可能会对这些数据提出的后续问题列表。以每行一个问题的形式回应。不要提供任何解释——只要问题。"
             )
         )
 
@@ -2029,18 +2029,22 @@ class VannaBase(ABC):
             fig = ldict.get("fig", None)
         except Exception as e:
             # Inspect data types
+            date_cols = df.select_dtypes(include=["datetime"]).columns.tolist()
             numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
             categorical_cols = df.select_dtypes(
                 include=["object", "category"]
             ).columns.tolist()
 
-            # Decision-making for plot type
-            if len(numeric_cols) >= 2:
-                # Use the first two numeric columns for a scatter plot
-                fig = px.scatter(df, x=numeric_cols[0], y=numeric_cols[1])
+            # Check if there is at least one date column
+            if len(date_cols) >= 1 and len(numeric_cols) >= 1:
+                # Use the first date column and the first numeric column for a line plot
+                fig = px.line(df, x=date_cols[0], y=numeric_cols[0])
+            elif len(numeric_cols) >= 2:
+                # Use the first two numeric columns for a line plot instead of scatter plot
+                fig = px.line(df, x=numeric_cols[0], y=numeric_cols[1])
             elif len(numeric_cols) == 1 and len(categorical_cols) >= 1:
-                # Use a bar plot if there's one numeric and one categorical column
-                fig = px.bar(df, x=categorical_cols[0], y=numeric_cols[0])
+                # Use a line plot instead of bar plot if there's one numeric and one categorical column
+                fig = px.line(df, x=categorical_cols[0], y=numeric_cols[0])
             elif len(categorical_cols) >= 1 and df[categorical_cols[0]].nunique() < 10:
                 # Use a pie chart for categorical data with fewer unique values
                 fig = px.pie(df, names=categorical_cols[0])
